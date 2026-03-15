@@ -3,47 +3,7 @@ import { Link } from 'react-router-dom'
 
 const Chat = () => {
   const [messages, setMessages] = useState([
-    { 
-      id: 1, 
-      text: "Hey everyone! Hope you're all having a good day", 
-      sender: "Alex", 
-      timestamp: "9:03 AM", 
-      avatar: "A",
-      isOwn: false 
-    },
-    { 
-      id: 2, 
-      text: "Doing well, how about you?", 
-      sender: "Luna", 
-      timestamp: "9:04 AM", 
-      avatar: "L",
-      isOwn: false 
-    },
-    { 
-      id: 3, 
-      text: "Working on the integration, but almost done!", 
-      sender: "Bailey", 
-      timestamp: "9:06 AM", 
-      avatar: "B",
-      isOwn: false 
-    },
-    { 
-      id: 4, 
-      text: "Let's set up a time to review the new feature. 📅", 
-      sender: "Eli", 
-      timestamp: "9:06 AM", 
-      avatar: "E",
-      isOwn: false 
-    },
-    { 
-      id: 5, 
-      text: "Check this out!", 
-      sender: "Ray", 
-      timestamp: "9:10 AM", 
-      avatar: "R",
-      isOwn: false,
-      hasImage: true 
-    },
+   
   ])
   
   const [newMessage, setNewMessage] = useState('')
@@ -135,8 +95,8 @@ const Chat = () => {
         <div className='flex-1 overflow-y-auto'>
           <div className='p-2'>
             
-            {/* Text Channels */}
-            <div className='mb-4'>
+            
+            {/* <div className='mb-4'>
               <div className='flex items-center justify-between px-2 py-1 mb-1'>
                 <span className='text-xs font-semibold text-[#8e9297] uppercase tracking-wide'>Text Channels</span>
                 <svg className="w-4 h-4 text-[#8e9297] cursor-pointer hover:text-[#dcddde]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,7 +126,7 @@ const Chat = () => {
                   </svg>
                 </div>
               ))}
-            </div>
+            </div> */}
 
             {/* Direct Messages */}
             <div>

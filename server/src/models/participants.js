@@ -10,12 +10,12 @@ const participantSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-    },
+    },  
     last_seen_message_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Message',
     },
 }, {timestamps: true});
 
-
+    
 module.exports = mongoose.model('Participant', participantSchema);

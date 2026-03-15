@@ -17,7 +17,8 @@ class UserService extends CrudService {
                 throw new Error("User with this email already exists");
             }
             const newUser = await this.repository.create(userData);
-            return newUser;
+            const token = await this.generateToken(newUser);
+            return { newUser, token };
         } catch (error) {
             console.log("Error signing up user: ", error);
             throw error;
@@ -29,10 +30,12 @@ class UserService extends CrudService {
             const user = await this.repository.findOne( { email: data.email  });
             if(!user) {
                 console.log("User not found with email: ", data.email);
+                throw new Error("User not found")
             }
             const isPasswordValid = await this.verifyPassword(data.password, user.password);
             if(!isPasswordValid) {
                 console.log("Invalid password for user: ", data.email);
+                throw new Error("Invalid password");
             }
             const token = await this.generateToken(user);
             return { user, token };

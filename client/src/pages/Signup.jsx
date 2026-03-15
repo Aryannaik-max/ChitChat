@@ -1,16 +1,43 @@
-import React from 'react'
+import React, { useState } from 'react'
 import ChitChatImg from '../assets/ChitChatImg.png'
 import User from '../assets/User.png'
 import Email from '../assets/Email.png'
 import Password from '../assets/Password.png'
 import GoogleIcon from '../assets/Google.png'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Signupimage from '../assets/Signupimage.png'
+import { useAuth } from '../context/AuthContext'
 
 const Signup = () => {
+  const navigate = useNavigate();
+  const { signup } = useAuth();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
+
   const handleGoogleLogin = () => {
     window.location.href = 'http://localhost:3000/api/v1/auth/google';
-  }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await signup(formData.name, formData.email, formData.password);
+      navigate('/chat');
+    } catch (error) {
+      console.log('Signup failed:', error);
+    }
+  };
   
   return (
     <div className='relative w-full min-h-screen flex items-center justify-center bg-[linear-gradient(to_bottom,#040814_0%,#0b1535_40%,#1a2850_100%)] text-white overflow-hidden'>
@@ -49,13 +76,22 @@ const Signup = () => {
           <div className='max-w-md mx-auto w-full'>
             <h2 className='font-Quicksand font-black text-5xl text-center text-white mb-12 tracking-tight'>Create Your Account</h2>
             <div>
-              <form className='flex flex-col gap-6'>
+              <form className='flex flex-col gap-6' onSubmit={handleSubmit}>
                 
                 <div className='group relative'>
                   <div className='absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-2xl blur-sm transition-all duration-300 group-focus-within:blur-md group-focus-within:opacity-75'></div>
                   <div className='relative p-5 rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-white/10 focus-within:border-purple-400/50 transition-all duration-300 flex items-center group-focus-within:bg-white/[0.05]'>
                     <img src={User} alt='User' className='w-6 h-6 opacity-60 mr-4 transition-opacity duration-300 group-focus-within:opacity-80' />
-                    <input type='text' placeholder='Username' className='placeholder-gray-400 font-medium font-Quicksand focus:outline-none text-white bg-transparent w-full text-lg' />
+                    <input
+                      type='text'
+                      name='name'
+                      placeholder='Username'
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      autoComplete='username'
+                      className='placeholder-gray-400 font-medium font-Quicksand focus:outline-none text-white bg-transparent w-full text-lg'
+                    />
                   </div>
                 </div>
                 
@@ -63,7 +99,16 @@ const Signup = () => {
                   <div className='absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-2xl blur-sm transition-all duration-300 group-focus-within:blur-md group-focus-within:opacity-75'></div>
                   <div className='relative p-5 rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-white/10 focus-within:border-purple-400/50 transition-all duration-300 flex items-center group-focus-within:bg-white/[0.05]'>
                     <img src={Email} alt='Email' className='w-6 h-6 opacity-60 mr-4 transition-opacity duration-300 group-focus-within:opacity-80' />
-                    <input type='email' placeholder='Email address' className='placeholder-gray-400 font-medium font-Quicksand focus:outline-none text-white bg-transparent w-full text-lg'  />
+                    <input
+                      type='email'
+                      name='email'
+                      placeholder='Email address'
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      autoComplete='email'
+                      className='placeholder-gray-400 font-medium font-Quicksand focus:outline-none text-white bg-transparent w-full text-lg'
+                    />
                   </div>
                 </div>
                 
@@ -71,7 +116,16 @@ const Signup = () => {
                   <div className='absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-2xl blur-sm transition-all duration-300 group-focus-within:blur-md group-focus-within:opacity-75'></div>
                   <div className='relative p-5 rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-white/10 focus-within:border-purple-400/50 transition-all duration-300 flex items-center group-focus-within:bg-white/[0.05]'>
                     <img src={Password} alt='Password' className='w-6 h-6 opacity-60 mr-4 transition-opacity duration-300 group-focus-within:opacity-80' />
-                    <input type='password' placeholder='Password' className='placeholder-gray-400 font-medium font-Quicksand focus:outline-none text-white bg-transparent w-full text-lg' />
+                    <input
+                      type='password'
+                      name='password'
+                      placeholder='Password'
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      autoComplete='new-password'
+                      className='placeholder-gray-400 font-medium font-Quicksand focus:outline-none text-white bg-transparent w-full text-lg'
+                    />
                   </div>
                 </div>
                 

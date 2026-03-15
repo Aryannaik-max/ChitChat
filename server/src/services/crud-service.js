@@ -36,7 +36,7 @@ class CrudService {
 
     async update(filter, data) {
         try {
-            const result = await this.repository.updateOne(filter, data);
+            const result = await this.repository.update(filter, data);
             console.log("Data updated successfully");
             return result;
         } catch (error) {
@@ -47,7 +47,7 @@ class CrudService {
 
     async delete(filter) {
         try {
-            const result = await this.repository.deleteOne(filter);
+            const result = await this.repository.delete(filter);
             console.log("Data deleted successfully");
             return result;
         } catch (error) {

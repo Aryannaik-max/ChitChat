@@ -1,13 +1,16 @@
-import React from 'react'
+﻿import React from 'react'
 import Bgimage from '../assets/Bgimage.png'
 import { Link } from 'react-router-dom'
+import Feature1 from '../assets/Feature1.png'
+import Feature2 from '../assets/Feature2.png'
+import Feature3 from '../assets/Feature3.png'
 
 const Home = () => {
   return (
     <div className='relative flex flex-col items-center min-h-screen bg-[linear-gradient(to_bottom,#040814_0%,#0b1535_40%,#1a2850_100%)] text-white  overflow-hidden'>
 
       {/* glow */}
-      <div className="absolute right-0 top-40 w-[400px] h-[400px] bg-indigo-500 blur-[180px] opacity-20"></div>
+      <div className="absolute right-0 top-40 w-[400px] h-[400px] bg-indigo-500 animate-pulse blur-[180px] opacity-20"></div>
 
       {/* particles */}
       {Array.from({ length: 200 }).map((_, i) => (
@@ -50,10 +53,12 @@ const Home = () => {
 
         <div className="flex flex-col gap-8 lg:w-[40%] text-center px-12 lg:text-left">
 
-          <h1 className="font-extrabold text-4xl sm:text-5xl lg:text-7xl">
+          <h1 className="font-extrabold text-4xl sm:text-5xl lg:text-7xl bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-clip-text text-transparent animate-slide-up">
             GROUP CHAT <br/>
             THAT'S ALL <br/>
-            FUN AND GAMES
+            <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              FUN AND GAMES
+            </span>
           </h1>
 
           <p className="text-gray-300 text-lg">
@@ -72,17 +77,17 @@ const Home = () => {
         </div>
 
         <div className="lg:w-[60%]">
-          <img src={Bgimage} className="w-full"/>
+          <img src={Bgimage} className="w-full scale-135"/>
         </div>
 
       </section>
 
 
       {/* FEATURE 1 */}
-      <section className="w-[90%] lg:w-[80%] bg-gradient-to-r from-[#1b2a5a] to-[#273b7a] border border-white/10 flex flex-col lg:flex-row items-center gap-10 p-10 rounded-[60px] lg:rounded-[100px] mt-125">
+      <section className="w-[90%] lg:w-[90%] bg-[linear-gradient(to_bottom,#040814_0%,#0b1535_40%,#1a2850_100%)]  border border-white/10 flex flex-col lg:flex-row items-center gap-20 p-20 rounded-[60px] lg:rounded-[100px] mt-125">
 
-        <div className="w-full lg:w-[50%]">
-          {/* <img src={Feature1} className="w-full rounded-[60px]"/> */}
+        <div className="w-full bg-[linear-gradient(to_bottom,#040814_0%,#0b1535_40%,#1a2850_100%)] rounded-[60px] lg:w-[55%]">
+          <img src={Feature1} className="w-full rounded-[60px]"/>
         </div>
 
         <div className="flex-1 text-center lg:text-left">
@@ -102,10 +107,10 @@ const Home = () => {
 
 
       {/* FEATURE 2 */}
-      <section className="w-[90%] lg:w-[80%] bg-gradient-to-r from-[#1b2a5a] to-[#273b7a] border border-white/10 flex flex-col lg:flex-row-reverse items-center gap-10 p-10 rounded-[60px] lg:rounded-[100px] mt-125">
+      <section className="w-[90%] lg:w-[90%] bg-[linear-gradient(to_bottom,#040814_0%,#0b1535_40%,#1a2850_100%)]  border border-white/10 flex flex-col lg:flex-row items-center gap-20 p-20 rounded-[60px] lg:rounded-[100px] mt-125">
 
-        <div className="w-full lg:w-[50%]">
-          {/* <img src={Feature2} className="w-full rounded-[60px]"/> */}
+        <div className="w-full bg-[linear-gradient(to_bottom,#040814_0%,#0b1535_40%,#1a2850_100%)] rounded-[60px] lg:w-[55%] ">
+          <img src={Feature2} className="w-full rounded-[60px]"/>
         </div>
 
         <div className="flex-1 text-center lg:text-left">
@@ -125,10 +130,10 @@ const Home = () => {
 
 
       {/* FEATURE 3 */}
-      <section className="w-[90%] lg:w-[80%] bg-gradient-to-r from-[#1b2a5a] to-[#273b7a] border border-white/10 flex flex-col lg:flex-row items-center gap-10 p-10 rounded-[60px] lg:rounded-[100px] mt-125 mb-24">
+      <section className="w-[90%] lg:w-[90%] bg-[linear-gradient(to_bottom,#040814_0%,#0b1535_40%,#1a2850_100%)]  border border-white/10 flex flex-col lg:flex-row items-center gap-20 p-20 rounded-[60px] lg:rounded-[100px] mt-125 mb-100">
 
-        <div className="w-full lg:w-[50%]">
-          {/* <img src={Feature3} className="w-full rounded-[60px]"/> */}
+        <div className="w-full bg-[linear-gradient(to_bottom,#040814_0%,#0b1535_40%,#1a2850_100%)] rounded-[60px] lg:w-[55%]" >
+          <img src={Feature3} className="w-full rounded-[60px]"/>
         </div>
 
         <div className="flex-1 text-center lg:text-left">
