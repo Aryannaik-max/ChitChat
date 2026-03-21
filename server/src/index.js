@@ -12,13 +12,13 @@ const routes = require('./routes/index');
 
 
 const startServer = async () => {
+    await connectDB();
     socketConfig(server);
     app.use(cors());
     app.use(passport.initialize());
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({extended: true}));
     app.use('/api',routes);
-    connectDB();
     server.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
     });

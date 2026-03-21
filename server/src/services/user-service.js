@@ -32,8 +32,11 @@ class UserService extends CrudService {
                 console.log("User not found with email: ", data.email);
                 throw new Error("User not found")
             }
+            if (user.authProvider === "google") {
+                throw new Error("Please login using Google");
+            }
             const isPasswordValid = await this.verifyPassword(data.password, user.password);
-            if(!isPasswordValid) {
+            if(!isPasswordValid) {  
                 console.log("Invalid password for user: ", data.email);
                 throw new Error("Invalid password");
             }
@@ -62,6 +65,16 @@ class UserService extends CrudService {
         } catch (error) {
             console.log("Error generating token: ", error);
             throw error;
+        }
+    }
+
+    async verifyToken(token) {
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            return decoded;
+        } catch (error) {
+            console.log("Error verifying token: ", error);
+            return false;
         }
     }
 }

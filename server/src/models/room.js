@@ -15,6 +15,10 @@ const roomSchema = new mongoose.Schema({
         default: false,
         required: true,
     },
+    invite_link: {
+        type: String,
+        unique: true,
+    }
 }, {timestamps: true});
 
 module.exports = mongoose.model('Room', roomSchema);

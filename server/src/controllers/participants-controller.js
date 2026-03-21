@@ -27,6 +27,7 @@ const getAllRoomsById = async (req, res) => {
     try {
         const userid = req.params.userid;
         const rooms = await participantsService.getRoomById(userid);
+        console.log("Rooms for user", userid, rooms);
         return res.status(200).json({
             data: rooms,
             success: true,
@@ -47,7 +48,7 @@ const getAllRoomsById = async (req, res) => {
 const getUserInRooms = async (req, res) => {
     try {
         const roomid = req.params.roomid;
-        const users = await participantsService.getUserInRooms(roomid);
+        const users = await participantsService.getUsersInRoom(roomid);
         if(!users) {
             return res.status(404).json({
                 data: {},

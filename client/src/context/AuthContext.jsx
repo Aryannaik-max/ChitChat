@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-const BAKCEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const AuthContext = createContext();
 
@@ -23,13 +23,13 @@ export const AuthProvider = ({ children }) => {
         }
 
         try {
-            const response = await axios.get(`${BAKCEND_URL}/profile`, {
-                header: {
+            const response = await axios.get(`${BACKEND_URL}/profile`, {
+                headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
             if(response.data.success) {
-                setUser(response.data.user);
+                setUser(response.data.data);
             }
             
         } catch (error) {
@@ -52,9 +52,9 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post(`${BAKCEND_URL}/login`, { email, password });
+            const response = await axios.post(`${BACKEND_URL}/login`, { email, password });
             if(response.data.success) {
-                const {token} = response.data;
+                const token = response.data.data.token;
                 setToken(token);
                 localStorage.setItem('token', token);
             }
@@ -67,9 +67,9 @@ export const AuthProvider = ({ children }) => {
 
     const signup = async (name, email, password) => {
         try {
-            const response = await axios.post(`${BAKCEND_URL}/signup`, { name, email, password });
+            const response = await axios.post(`${BACKEND_URL}/signup`, { name, email, password });
             if(response.data.success) {
-                const {token} = response.data;
+                const token = response.data.data.token;
                 setToken(token);
                 localStorage.setItem('token', token);
             }

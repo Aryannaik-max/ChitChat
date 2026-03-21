@@ -22,6 +22,36 @@ const signup = async (req, res) => {
     }
 }
 
+const getUserProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await userService.findOne({ _id: userId });
+        if(!user) {
+            return res.status(404).json({
+                data: {},
+                success: false,
+                message: 'User not found',
+                err: {}
+            });
+        }
+        return res.status(200).json({
+            data: user,
+            success: true,
+            message: 'Successfully fetched user profile',
+            err: {}
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            data: {},   
+            success: false,
+            message: 'Not able to fetch user profile',
+            err: error
+        });
+    }
+}
+
+
 const loginUser = async (req, res) => {
     try {
         const data = req.body;
@@ -46,7 +76,7 @@ const loginUser = async (req, res) => {
 const getUser = async (req, res) => {
     try {
         const id = req.params.id;
-        const user = await userService.findOne(id);
+        const user = await userService.findOne({ _id: id });
         if(!user) {
             return res.status(404).json({
                 data: {},
@@ -75,7 +105,7 @@ const getUser = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         const id = req.params.id;
-        const user = await userService.delete(id);
+        const user = await userService.delete({ _id: id });
         if(!user) {
             return res.status(404).json({
                 data: {},
@@ -136,5 +166,6 @@ module.exports = {
     getUser,
     deleteUser,
     updateUser,
-    loginUser
+    loginUser,
+    getUserProfile
 }

@@ -24,6 +24,16 @@ class CrudService {
         }
     }
 
+    async find(data) {
+        try {
+            const result = await this.repository.find(data);
+            return result;
+        } catch (error) {
+            console.log("Error finding data in CrudService: ", error);
+            throw error;
+        }
+    }
+
     async findAll() {
         try {
             const result = await this.repository.findAll();

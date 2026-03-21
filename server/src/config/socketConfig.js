@@ -19,29 +19,82 @@ const socketConfig = (server) => {
             console.log(`User disconnected with socket id: ${socket.id}`);
         });
 
-        socket.on('join-room', async (data) => {
-            const {roomId, userId} = data;
-            socket.join(roomId);
-            await participantService.create({user_id: userId, room_id: roomId});
-            console.log(`User with socket id: ${socket.id} joined room: ${roomId}`);
+        socket.on('join-room', async (data, callback) => {
+            try {
+                const {roomId, userId} = data || {};
+                if (!roomId || !userId) {
+                    if (callback) callback({success: false, message: 'roomId and userId are required'});
+                    return;
+                }
+
+                socket.join(roomId);
+
+                const existingParticipant = await participantService.findOne({
+                    user_id: userId,
+                    room_id: roomId,
+                });
+
+                if (!existingParticipant) {
+                    await participantService.create({user_id: userId, room_id: roomId});
+                }
+
+                console.log(`User with socket id: ${socket.id} joined room: ${roomId}`);
+                if (callback) callback({success: true});
+            } catch (error) {
+                console.log('Error in join-room:', error);
+                if (callback) callback({success: false, message: 'Failed to join room'});
+            }
         });
 
-        socket.on('leave-room', async (data) => {
-            const {roomId, userId} = data;
-            socket.leave(roomId);
-            await participantService.delete({user_id: userId, room_id: roomId});
-            console.log(`User with socket id: ${socket.id} left the room: ${roomId}`);
+        socket.on('leave-room', async (data, callback) => {
+            try {
+                const {roomId, userId} = data || {};
+                if (!roomId || !userId) {
+                    if (callback) callback({success: false, message: 'roomId and userId are required'});
+                    return;
+                }
+
+                socket.leave(roomId);
+                await participantService.delete({user_id: userId, room_id: roomId});
+                console.log(`User with socket id: ${socket.id} left the room: ${roomId}`);
+                if (callback) callback({success: true});
+            } catch (error) {
+                console.log('Error in leave-room:', error);
+                if (callback) callback({success: false, message: 'Failed to leave room'});
+            }
         });
         
-        socket.on('send-message', async (data) => {
-            const {roomId, message, senderId} = data;
-            io.to(roomId).emit('receive-message', {
-                message,
-                senderId,
-                timestamp: new Date()
-            });
-            await messageService.create({content: message, sender_id: senderId, room_id: roomId});  
-            console.log(`User with socket id: ${socket.id} sent message to room: ${roomId}`);
+        socket.on('send-message', async (data, callback) => {
+            try {
+                const {roomId, message, senderId} = data || {};
+                const trimmedMessage = typeof message === 'string' ? message.trim() : '';
+
+                if (!roomId || !senderId || !trimmedMessage) {
+                    if (callback) callback({success: false, message: 'roomId, senderId and message are required'});
+                    return;
+                }
+
+                const createdMessage = await messageService.create({
+                    content: trimmedMessage,
+                    sender_id: senderId,
+                    room_id: roomId,
+                });
+
+                const payload = {
+                    _id: createdMessage._id,
+                    room_id: createdMessage.room_id,
+                    sender_id: createdMessage.sender_id,
+                    content: createdMessage.content,
+                    createdAt: createdMessage.createdAt,
+                };
+
+                io.to(roomId).emit('receive-message', payload);
+                console.log(`User with socket id: ${socket.id} sent message to room: ${roomId}`);
+                if (callback) callback({success: true, data: payload});
+            } catch (error) {
+                console.log('Error in send-message:', error);
+                if (callback) callback({success: false, message: 'Failed to send message'});
+            }
         });
 
         socket.on('typing', (roomId) => {

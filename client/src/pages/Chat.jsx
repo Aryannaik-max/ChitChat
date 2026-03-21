@@ -1,294 +1,492 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useChat } from '../context/ChatContext';
+import { ArchiveIcon, MessageCircle } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const Chat = () => {
-  const [messages, setMessages] = useState([
-   
-  ])
-  
-  const [newMessage, setNewMessage] = useState('')
-  const [activeChannel, setActiveChannel] = useState('general')
-  const messagesEndRef = useRef(null)
+  const { user, authToken } = useAuth();
+  const { roomid } = useParams();
+  const { groups, messages, fetchChat, sendMessage, createGroup, joinroom, fetchRooms, fetchUsersInRoom, usersInRoom, startDM, privateChats} = useChat();
+  const navigate = useNavigate();
 
-  const channels = [
-    { name: 'general', icon: '#', count: 12 },
-    { name: 'tasks', icon: '#' },
-    { name: 'dev-discussion', icon: '#' },
-    { name: 'design', icon: '#' },
-    { name: 'resources', icon: '#' }
-  ]
+  const [activeRoom, setActiveRoom] = useState(null);
+  const [joinRoom, setJoinRoom] = useState('');
+  const [newMessage, setNewMessage] = useState('');
+  const [createRoom, setCreateRoom] = useState(false);
+  const [groupStep, setGroupStep] = useState(1);
+  const [groupName, setGroupName] = useState('');
+  const [share, setShare] = useState(false);
+  const [joiningViaCode, setJoiningViaCode] = useState(false);
 
-  const directMessages = [
-    { name: 'Alex', avatar: 'A', online: true },
-    { name: 'Luna', avatar: 'L', online: true },
-    { name: 'Bailey', avatar: 'B', online: false },
-    { name: 'Eli', avatar: 'E', online: true },
-    { name: 'Ray', avatar: 'R', online: true, hasNotification: true }
-  ]
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+  const messagesEndRef = useRef(null);
+  const joinedRoomRef = useRef(null);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const handleSendMessage = (e) => {
-    e.preventDefault()
-    if (newMessage.trim()) {
-      const newMsg = {
-        id: messages.length + 1,
-        text: newMessage,
-        sender: "You",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        avatar: "Y",
-        isOwn: true
+    if (activeRoom?._id) {
+      fetchChat(activeRoom._id);
+      fetchUsersInRoom(activeRoom._id); 
+      console.log("Users in room after fetch:", usersInRoom);
+      if (joinedRoomRef.current !== activeRoom._id) {
+        joinroom(activeRoom._id);
+        joinedRoomRef.current = activeRoom._id;
       }
-      setMessages([...messages, newMsg])
-      setNewMessage('')
     }
-  }
+  }, [activeRoom?._id, fetchChat, joinroom, fetchUsersInRoom]);
 
-  const getAvatarColor = (avatar) => {
-    const colors = [
-      'from-purple-500 to-indigo-500',
-      'from-blue-500 to-cyan-500', 
-      'from-green-500 to-teal-500',
-      'from-yellow-500 to-orange-500',
-      'from-pink-500 to-rose-500',
-      'from-red-500 to-pink-500'
-    ]
-    return colors[avatar.charCodeAt(0) % colors.length]
+  useEffect(() => {
+  if (privateChats.length > 0) {
+    privateChats.forEach(room => {
+      if (!usersInRoom?.[room._id]) {
+        fetchUsersInRoom(room._id);
+      }
+    });
   }
+}, [privateChats]);
+
+  useEffect(() => {
+  if (!roomid) return;
+
+  const allRooms = [...groups, ...privateChats];
+
+  const room = allRooms.find(r => r._id === roomid);
+
+  if (room) {
+    setActiveRoom(room);
+  }
+}, [roomid, groups, privateChats]);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !activeRoom) return;
+    try {
+      await sendMessage(activeRoom._id, newMessage, user._id);
+      setNewMessage('');
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const activeRoomMessages = activeRoom ? (messages[activeRoom._id] || []) : [];
+
+  const handleCreateGroup = async () => {
+    if (!groupName.trim()) return;
+    try {
+      await createGroup(groupName, user._id);
+      setGroupName('');
+      setCreateRoom(false);
+      setGroupStep(1);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  // const startDM = async (otherUserId) => {
+  //   try {
+  //     const response = await 
+  //   } catch (error) {
+      
+  //   }
+  // }
+  const handleJoinViaCode = async () => {
+    const code = joinRoom.trim();
+    if (!code) return;
+
+    setJoiningViaCode(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/invite/${code}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Invalid invite code");
+      }
+
+      const data = await res.json();
+
+      await fetchRooms();
+
+      setJoinRoom('');
+      setCreateRoom(false);
+      setGroupStep(1);
+      navigate(`/chat/${data.data._id}`);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Invalid invite code");
+    } finally {
+      setJoiningViaCode(false);
+    }
+  };
+
+  const handleShareInvite = async () => {
+    try {
+      const link = `${window.location.origin}/invite/${activeRoom.invite_link}`;
+      await navigator.clipboard.writeText(link);
+      alert("Invite link copied to clipboard!");
+    } catch (error) {
+      console.log("Error sharing invite link:", error);
+    }
+  };
 
   return (
-    <div className='flex h-screen bg-[#1e1f22] text-white'>
-      
-      {/* Server/Sidebar Icon */}
-      <div className='w-[72px] bg-[#0b0c0f] flex flex-col items-center py-3 space-y-2'>
-        <div className='w-12 h-12 bg-[#5865f2] rounded-[24px] hover:rounded-[16px] transition-all duration-200 flex items-center justify-center cursor-pointer relative'>
-          <span className='font-bold text-white'>CC</span>
-          <div className='absolute left-[-8px] top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full opacity-0'></div>
-        </div>
-        
-        <div className='w-8 h-[2px] bg-[#1e1f22] rounded-full'></div>
-        
-        {/* Additional servers */}
-        <div className='w-12 h-12 bg-[#1e1f22] rounded-[24px] hover:rounded-[16px] hover:bg-[#5865f2] transition-all duration-200 flex items-center justify-center cursor-pointer'>
-          <span className='text-[#dcddde] text-xl'>+</span>
-        </div>
-      </div>
+    <div className="bg-[#0B1426] h-screen flex text-gray-200 font-sans overflow-hidden">
 
-      {/* Left Sidebar */}
-      <div className='w-[240px] bg-[#111214] flex flex-col'>
-        
-        {/* Server Header */}
-        <div className='h-12 border-b border-[#0b0c0f] flex items-center justify-between px-4 shadow-sm'>
-          <h1 className='font-semibold text-white'>ChatVerse Project</h1>
-          <svg className="w-4 h-4 text-[#b9bbbe]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
+      {/* SIDEBAR CONTAINER */}
+      <div className="w-[320px] lg:w-[360px] bg-[#0F172A] h-screen border-r border-white/5 flex flex-shrink-0 shadow-2xl z-10">
 
-        {/* Channels */}
-        <div className='flex-1 overflow-y-auto'>
-          <div className='p-2'>
-            
-            
-            {/* <div className='mb-4'>
-              <div className='flex items-center justify-between px-2 py-1 mb-1'>
-                <span className='text-xs font-semibold text-[#8e9297] uppercase tracking-wide'>Text Channels</span>
-                <svg className="w-4 h-4 text-[#8e9297] cursor-pointer hover:text-[#dcddde]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+        {/* GROUP COLUMN (Narrow Left Bar) */}
+        <div className="w-[76px] bg-[#060913] h-screen border-r py-5 border-white/5 flex flex-col items-center gap-4 flex-shrink-0">
+
+          {/* DM */}
+          <div
+            className={`w-12 h-12 rounded-[24px] hover:rounded-[16px] flex items-center justify-center cursor-pointer transition-all duration-300 shadow-md ${!activeRoom ? "bg-[#6C63FF] text-white" : "bg-[#1E293B] text-gray-400 hover:bg-[#6C63FF] hover:text-white"}`}
+            onClick={() => {
+              setActiveRoom(null);
+              joinedRoomRef.current = null;
+              navigate('/chat');
+            }}
+          >
+            <MessageCircle size={22} />
+          </div>
+
+          <div className="w-8 h-[2px] bg-white/10 rounded-full my-1"></div>
+
+          {/* ROOMS */}
+          <div className="flex flex-col gap-3 overflow-y-auto w-full items-center pb-4 scrollbar-hide">
+            {groups.map(room => (
+              <div
+                key={room._id}
+                className={`w-12 h-12 flex items-center justify-center text-center p-2 cursor-pointer text-[11px] font-bold tracking-wide transition-all duration-300 shadow-sm overflow-hidden leading-tight ${
+                  activeRoom?._id === room._id 
+                    ? "rounded-[16px] bg-[#6C63FF] text-white shadow-lg shadow-[#6C63FF]/30" 
+                    : "rounded-[24px] hover:rounded-[16px] bg-[#1E293B] text-gray-400 hover:bg-[#6C63FF] hover:text-white"
+                }`}
+                onClick={() => {
+                  navigate(`/chat/${room._id}`);
+                  joinedRoomRef.current = null;
+                  setActiveRoom(room);
+                }}
+              >
+                {room.room_name?.substring(0, 3).toUpperCase()}
               </div>
-              
-              {channels.map((channel) => (
-                <div 
-                  key={channel.name}
-                  onClick={() => setActiveChannel(channel.name)}
-                  className={`flex items-center px-2 py-1 mx-1 rounded cursor-pointer group ${
-                    activeChannel === channel.name 
-                      ? 'bg-[#1e1f22] text-white' 
-                      : 'text-[#8e9297] hover:bg-[#1e1f22] hover:text-[#dcddde]'
-                  }`}
-                >
-                  <span className='mr-1.5 text-[#8e9297]'>{channel.icon}</span>
-                  <span className='flex-1 text-sm'>{channel.name}</span>
-                  {channel.count && (
-                    <span className='text-xs bg-[#f23f42] text-white rounded-full px-1 min-w-[16px] h-4 flex items-center justify-center'>
-                      {channel.count}
-                    </span>
-                  )}
-                  <svg className="w-4 h-4 text-[#b9bbbe] opacity-0 group-hover:opacity-100 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </div>
-              ))}
-            </div> */}
+            ))}
+          </div>
 
-            {/* Direct Messages */}
-            <div>
-              <div className='flex items-center justify-between px-2 py-1 mb-1'>
-                <span className='text-xs font-semibold text-[#8e9297] uppercase tracking-wide'>Direct Messages</span>
-                <svg className="w-4 h-4 text-[#8e9297] cursor-pointer hover:text-[#dcddde]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+          {/* CREATE GROUP BUTTON */}
+          <button
+            className="mt-auto mb-2 w-12 h-12 bg-[#1E293B] text-emerald-400 rounded-[24px] hover:rounded-[16px] flex items-center justify-center text-2xl font-light hover:bg-emerald-500 hover:text-white transition-all duration-300 shadow-md"
+            onClick={() => setCreateRoom(true)}
+          >
+            +
+          </button>
+        </div>
+
+        {/* SECOND SIDEBAR (Members & Info) */}
+        <div className="flex-1 py-6 px-4 overflow-y-auto bg-[#0F172A] custom-scrollbar">
+          {activeRoom && activeRoom.is_group? (
+            <>
+              <div className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-3 flex items-center justify-between">
+                <span>Members</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded-full">{(usersInRoom?.[activeRoom._id] ?? []).length}</span>
               </div>
-              
-              {directMessages.map((user) => (
-                <div 
-                  key={user.name}
-                  className='flex items-center px-2 py-1 mx-1 rounded cursor-pointer text-[#8e9297] hover:bg-[#1e1f22] hover:text-[#dcddde] group'
-                >
-                  <div className='relative mr-3'>
-                    <div className={`w-8 h-8 bg-gradient-to-r ${getAvatarColor(user.avatar)} rounded-full flex items-center justify-center text-sm font-semibold text-white`}>
-                      {user.avatar}
-                    </div>
-                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 border-2 border-[#111214] rounded-full ${
-                      user.online ? 'bg-[#3ba55c]' : 'bg-[#747f8d]'
-                    }`}></div>
-                  </div>
-                  <span className='flex-1 text-sm'>{user.name}</span>
-                  {user.hasNotification && (
-                    <div className='w-2 h-2 bg-[#f23f42] rounded-full'></div>
-                  )}
-                  <svg className="w-4 h-4 text-[#b9bbbe] opacity-0 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+              <div className="space-y-1">
+                {(usersInRoom?.[activeRoom._id] ?? []).map((p) => (
+                    <div
+                      key={p._id}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all duration-200 cursor-pointer justify-between group"
+                    >
+                      {/* Avatar + Info */}
+                      <div className="flex items-center gap-3 flex-1 overflow-hidden">
+                        <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-tr from-[#6C63FF] to-[#9D95FF] flex items-center justify-center text-sm font-bold text-white shadow-sm ring-2 ring-transparent group-hover:ring-white/10 transition-all">
+                          {p.name?.charAt(0).toUpperCase()}
+                        </div>
 
-        {/* User Area */}
-        <div className='h-[52px] bg-[#0b0c0f] flex items-center px-2'>
-          <div className='flex items-center flex-1'>
-            <div className='relative mr-2'>
-              <div className='w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-sm font-semibold'>
-                Y
-              </div>
-              <div className='absolute -bottom-1 -right-1 w-3 h-3 bg-[#3ba55c] border-2 border-[#0b0c0f] rounded-full'></div>
-            </div>
-            <div className='flex-1 min-w-0'>
-              <div className='text-sm font-semibold text-white truncate'>You</div>
-              <div className='text-xs text-[#b9bbbe] truncate'>#1234</div>
-            </div>
-          </div>
-          <div className='flex items-center space-x-2'>
-            <button className='p-1 text-[#b9bbbe] hover:text-[#dcddde]'>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
-              </svg>
-            </button>
-            <button className='p-1 text-[#b9bbbe] hover:text-[#dcddde]'>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Chat Area */}
-      <div className='flex-1 flex flex-col bg-[#1e1f22]'>
-        
-        {/* Chat Header */}
-        <div className='h-12 border-b border-[#111214] flex items-center px-4 shadow-sm'>
-          <div className='flex items-center'>
-            <span className='text-[#8e9297] mr-2'>#</span>
-            <h2 className='font-semibold text-white'>{activeChannel}</h2>
-          </div>
-          <div className='ml-auto flex items-center space-x-4'>
-            <button className='p-1 text-[#b9bbbe] hover:text-[#dcddde]'>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-            <button className='p-1 text-[#b9bbbe] hover:text-[#dcddde]'>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Messages Area */}
-        <div className='flex-1 overflow-y-auto px-4 py-4'>
-          {messages.map((message, index) => {
-            const showAvatar = index === 0 || messages[index - 1].sender !== message.sender
-            
-            return (
-              <div key={message.id} className={`flex ${showAvatar ? 'mt-4' : 'mt-1'} hover:bg-[#0f1011] -mx-4 px-4 py-0.5 group`}>
-                {showAvatar ? (
-                  <div className='mr-4 mt-0.5'>
-                    <div className={`w-10 h-10 bg-gradient-to-r ${getAvatarColor(message.avatar)} rounded-full flex items-center justify-center font-semibold text-white cursor-pointer hover:shadow-lg transition-shadow`}>
-                      {message.avatar}
-                    </div>
-                  </div>
-                ) : (
-                  <div className='w-10 mr-4 flex justify-center'>
-                    <span className='text-xs text-[#72767d] opacity-0 group-hover:opacity-100 leading-5 mt-0.5 font-medium'>
-                      {message.timestamp}
-                    </span>
-                  </div>
-                )}
-                
-                <div className='flex-1 min-w-0'>
-                  {showAvatar && (
-                    <div className='flex items-baseline mb-1'>
-                      <span className='font-medium text-white mr-2 cursor-pointer hover:underline'>
-                        {message.sender}
-                      </span>
-                      <span className='text-xs text-[#72767d] font-medium'>
-                        {message.timestamp}
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div className='text-[#dcddde] break-words'>
-                    {message.text}
-                  </div>
-                  
-                  {message.hasImage && (
-                    <div className='mt-2'>
-                      <div className='w-64 h-40 bg-gradient-to-br from-purple-500/20 to-indigo-500/20 rounded-lg flex items-center justify-center border border-[#111214]'>
-                        <div className='text-center text-[#8e9297]'>
-                          <div className='w-12 h-12 bg-[#5865f2] rounded-full flex items-center justify-center mx-auto mb-2'>
-                            <span className='text-2xl'>🤖</span>
-                          </div>
-                          <p className='text-sm font-medium'>Join Us</p>
+                        {/* Name + Role */}
+                        <div className="flex flex-col truncate">
+                          <span className="text-sm text-gray-200 font-medium truncate flex items-center gap-2">
+                            {p.name}
+                            {p._id === activeRoom.admin_id && (
+                              <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">
+                                Admin
+                              </span>
+                            )}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-          <div ref={messagesEndRef} />
-        </div>
 
-        {/* Message Input */}
-        <div className='px-4 pb-6'>
-          <form onSubmit={handleSendMessage}>
-            <div className='bg-[#111214] rounded-lg px-4 py-3'>
-              <input
-                type='text'
-                placeholder={`Message #${activeChannel}`}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className='w-full bg-transparent text-[#dcddde] placeholder-[#72767d] focus:outline-none'
-              />
-            </div>
-          </form>
+                      {/* Right side actions */}
+                      <span className="shrink-0">
+                        {p._id === user._id ? (
+                          <span className="text-[10px] text-gray-500 font-bold bg-black/20 px-2 py-1 rounded-md">YOU</span>
+                        ) : (
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity transform hover:scale-110" onClick={async ()=>{
+                            const room = await startDM(p._id);
+                            await fetchRooms();
+                            setActiveRoom(room);
+                            navigate(`/chat/${room._id}`);
+                          }}>
+                            <MessageCircle size={18} className="text-gray-400 hover:text-white transition-colors" />
+                          </div>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </>
+          ) : (
+              privateChats.length > 0 ? (
+              <>
+                <div className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-3">
+                  Direct Messages
+                </div>
+                <div className="space-y-1">
+                  {privateChats.map((room) => {
+                    const otherUser = (usersInRoom?.[room._id] ?? [])
+                      .find(p => p._id !== user._id);
+
+                    return (
+                      <div
+                        key={room._id}
+                        onClick={() => {
+                          navigate(`/chat/${room._id}`);
+                          setActiveRoom(room);
+                        }}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group ${
+                          activeRoom?._id === room._id
+                            ? "bg-[#6C63FF] text-white shadow-md shadow-[#6C63FF]/20"
+                            : "hover:bg-white/5 text-gray-300"
+                        }`}
+                      >
+                        <div className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
+                          activeRoom?._id === room._id ? "bg-white/20 text-white" : "bg-[#1E293B] text-gray-400 group-hover:text-white group-hover:bg-gray-700 transition-colors"
+                        }`}>
+                          {otherUser?.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium truncate text-sm">
+                          {otherUser?.name}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+) : (
+              <div className="h-full flex flex-col items-center justify-center text-center px-6 opacity-60">
+                <div className="w-16 h-16 bg-[#1E293B] rounded-full flex items-center justify-center mb-4">
+                  <MessageCircle size={28} className="text-gray-500" />
+                </div>
+                <p className="text-sm font-medium text-gray-300 mb-1">No messages yet</p>
+                <p className="text-xs text-gray-500 leading-relaxed">Join a group or start a direct message to begin chatting.</p>
+              </div>
+    )
+          )}
         </div>
       </div>
-    </div>
-  )
-}
 
-export default Chat
+      {/* CHAT AREA */}
+      <div className="flex-1 flex flex-col relative bg-[#0B1426]">
+
+        {/* HEADER */}
+        <div className="h-[76px] bg-[#0B1426]/90 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-8 z-10 sticky top-0 shadow-sm">
+          <div className="flex items-center gap-3">
+            {console.log("Active Room:", activeRoom)}
+            {activeRoom && (
+              <span className="text-gray-500 text-2xl font-light select-none">#</span>
+            )}
+            <span className="text-lg font-bold text-white tracking-wide">
+              {activeRoom ? (
+                activeRoom.is_group
+                  ? activeRoom.room_name
+                  : (
+                      usersInRoom?.[activeRoom._id]?.find(p => p._id !== user._id)?.name || "Chat"
+                  )
+              ) : (
+                "Welcome"
+              )}
+            </span>
+          </div>
+
+          {activeRoom && activeRoom.is_group && activeRoom.admin_id === user._id && (
+            <button 
+              onClick={() => setShare(true)}
+              className="px-4 py-2 bg-[#1E293B] hover:bg-white/10 text-gray-200 rounded-lg text-sm font-semibold transition-all duration-200 border border-white/5 hover:border-white/10 flex items-center gap-2"
+            >
+              Share Invite
+            </button>
+          )}
+        </div>
+
+        {/* MESSAGES */}
+        <div className="flex-1 overflow-y-auto p-8 space-y-6">
+          {activeRoom && activeRoomMessages.map((msg, index) => {
+            const isMine = msg.sender_id === user._id || msg.sender_id?._id === user._id;
+            return (
+              <div key={msg._id} className={`flex ${isMine ? "justify-end" : "justify-start"} animate-fade-in-up`}>
+                <div 
+                  className={`max-w-[75%] lg:max-w-[65%] px-5 py-3.5 text-[15px] shadow-sm leading-relaxed
+                    ${isMine 
+                      ? "bg-gradient-to-tr from-[#5A52D9] to-[#6C63FF] text-white rounded-2xl rounded-tr-sm shadow-[#6C63FF]/10" 
+                      : "bg-[#1E293B] text-gray-100 rounded-2xl rounded-tl-sm border border-white/5"}`}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            );
+          })}
+          <div ref={messagesEndRef} className="h-4"></div>
+        </div>
+
+        {/* MESSAGE INPUT */}
+        {activeRoom && (
+          <div className="p-6 bg-gradient-to-t from-[#0B1426] to-transparent">
+            <div className="max-w-5xl mx-auto flex gap-3 bg-[#1E293B] border border-white/5 rounded-2xl p-2 focus-within:border-[#6C63FF]/50 focus-within:ring-4 focus-within:ring-[#6C63FF]/10 transition-all shadow-xl">
+              <input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder={`Message ${activeRoom.is_group ? '#' + activeRoom.room_name : 'user'}...`}
+                className="flex-1 bg-transparent px-4 py-2.5 text-gray-200 outline-none placeholder-gray-500 font-medium"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim()}
+                className="px-8 py-2.5 bg-[#6C63FF] text-white rounded-xl hover:bg-[#5A52D9] active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* SHARE MODAL */}
+      {share && (
+        <div className="fixed inset-0 bg-[#0B1426]/80 backdrop-blur-md flex items-center justify-center z-50 transition-all">
+          <div className="bg-[#0F172A] w-[440px] p-8 rounded-3xl border border-white/10 shadow-2xl relative">
+            <button className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition" onClick={() => setShare(false)}>✕</button>
+            <h2 className="text-2xl font-bold text-white mb-2">Invite Friends</h2>
+            <p className="text-sm text-gray-400 mb-6">Share this exclusive link to let others join your server.</p>
+            <div className="flex gap-2">
+              <input
+                value={activeRoom ? `${window.location.origin}/invite/${activeRoom.invite_link}` : ""}
+                readOnly
+                className="flex-1 bg-[#060913] border border-white/10 px-4 py-3.5 rounded-xl text-sm text-gray-300 focus:outline-none focus:border-white/20 transition-colors"
+              />
+              <button 
+                onClick={handleShareInvite} 
+                className="bg-[#6C63FF] hover:bg-[#5A52D9] active:scale-95 transition-all text-white px-6 py-3.5 rounded-xl font-semibold shadow-lg shadow-[#6C63FF]/20"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE / JOIN MODAL */}
+      {createRoom && (
+        <div className="fixed inset-0 bg-[#0B1426]/80 backdrop-blur-md flex items-center justify-center z-50">
+          <div className="bg-[#0F172A] w-[440px] p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
+            <button
+              className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition"
+              onClick={() => { setCreateRoom(false); setGroupStep(1); }}
+            >✕</button>
+
+            {/* STEP 1 */}
+            {groupStep === 1 && (
+              <div className="animate-fade-in">
+                <h2 className="text-2xl font-bold text-center text-white mb-2">Create or Join</h2>
+                <p className="text-gray-400 text-sm text-center mb-8 px-4">
+                  Your server is where you and your friends hang out. Make yours or join one.
+                </p>
+
+                <div className="space-y-6">
+                  <div className="bg-[#1E293B]/50 p-5 rounded-2xl border border-white/5">
+                    <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Have an invite code?</label>
+                    <div className='flex gap-2'>
+                      <input
+                        type='text'
+                        placeholder='Enter invite code'
+                        value={joinRoom}
+                        onChange={(e) => setJoinRoom(e.target.value)}
+                        className='bg-[#060913] px-4 py-3 rounded-xl flex-1 outline-none text-white focus:ring-2 focus:ring-[#6C63FF]/50 border border-white/5 transition-all'
+                      />
+                      <button
+                        className='px-6 py-3 bg-[#6C63FF] text-white font-semibold rounded-xl hover:bg-[#5A52D9] active:scale-95 transition-all disabled:opacity-50 shadow-md'
+                        onClick={handleJoinViaCode}
+                        disabled={joiningViaCode || !joinRoom.trim()}
+                      >
+                        {joiningViaCode ? "Joining..." : "Join"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-white/5"></div>
+                    <span className="flex-shrink-0 mx-4 text-gray-500 text-xs font-bold uppercase tracking-widest">OR</span>
+                    <div className="flex-grow border-t border-white/5"></div>
+                  </div>
+
+                  <button
+                    className="w-full bg-[#1E293B] hover:bg-white/10 border border-white/5 text-white font-semibold py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 group"
+                    onClick={() => setGroupStep(2)}
+                  >
+                    <span>Create My Own Server</span>
+                    <span className="text-gray-400 group-hover:translate-x-1 transition-transform">→</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2 */}
+            {groupStep === 2 && (
+              <div className="animate-fade-in">
+                <h2 className="text-2xl font-bold text-center text-white mb-2">Customize your server</h2>
+                <p className="text-gray-400 text-sm text-center mb-8">Give your new server a personality with a name.</p>
+                
+                <div className="mb-8">
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Server Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Gamer's Paradise"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    className="w-full bg-[#060913] border border-white/5 px-4 py-3.5 rounded-xl text-white outline-none focus:border-[#6C63FF]/50 focus:ring-2 focus:ring-[#6C63FF]/20 transition-all text-sm font-medium"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setGroupStep(1)} 
+                    className="flex-1 py-3.5 bg-transparent hover:bg-white/5 rounded-xl text-gray-300 hover:text-white font-semibold transition-all"
+                  >
+                    Back
+                  </button>
+                  <button 
+                    onClick={handleCreateGroup} 
+                    disabled={!groupName.trim()}
+                    className="flex-[2] py-3.5 bg-[#6C63FF] text-white font-semibold rounded-xl hover:bg-[#5A52D9] active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-[#6C63FF]/20"
+                  >
+                    Create Server
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Chat;

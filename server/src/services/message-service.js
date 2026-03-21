@@ -9,7 +9,7 @@ class MessageService extends CrudService {
 
     async getMessagesByRoomId(roomid) {
         try {
-            const messages = await this.repository.findOne({room_id: roomid}).populate('sender_id');
+            const messages = await this.repository.model.find({room_id: roomid}).populate('sender_id').sort({ createdAt: 1 });
             return messages;
         } catch (error) {
             console.log(error);
