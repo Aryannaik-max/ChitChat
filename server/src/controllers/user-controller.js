@@ -55,7 +55,7 @@ const getUserProfile = async (req, res) => {
 const loginUser = async (req, res) => {
     try {
         const data = req.body;
-        const { user, token } = await userService.login(data);
+        const { user, token } = await userService.login({...data, ip: req.ip});
         return res.status(200).json({
             data: { user, token },
             success: true,

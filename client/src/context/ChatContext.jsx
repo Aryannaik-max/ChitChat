@@ -36,7 +36,7 @@ export const ChatProvider = ({ children }) => {
   const [rooms, setRooms] = useState([]);
   const [messages, setMessages] = useState({});
   const [usersInRoom, setUsersInRoom] = useState({});
-  const [DMUsers, setDMUsers] = useState({})
+  // const [DMUsers, setDMUsers] = useState({})
 
   const fetchRooms = useCallback(async () => {
 
@@ -102,7 +102,8 @@ export const ChatProvider = ({ children }) => {
         room_id: data.room_id || data.roomId,
         sender_id: data.sender_id || data.senderId,
         content: data.content || data.message,
-        createdAt: data.createdAt || data.timestamp || new Date().toISOString()
+        createdAt: data.createdAt || data.timestamp || new Date().toISOString(),
+        reply_to: data.reply_to || data.replyTo || null
       };
 
       setMessages(prev => ({
@@ -140,7 +141,7 @@ export const ChatProvider = ({ children }) => {
       );
 
       if (response.data.success) {
-
+        console.log("Fetched messages for room ", roomId, ": ", response.data.data);
         setMessages(prev => ({
           ...prev,
           [roomId]: response.data.data
@@ -180,7 +181,7 @@ export const ChatProvider = ({ children }) => {
     }
   }, [token]);
 
-  const sendMessage = useCallback((roomId, content, senderId) => {
+  const sendMessage = useCallback((roomId, content, senderId, reply_to) => {
     if (!socketRef.current) {
       throw new Error("Socket is not connected");
     }
@@ -196,7 +197,8 @@ export const ChatProvider = ({ children }) => {
         {
           roomId,
           message,
-          senderId
+          senderId,
+          reply_to
         },
         (ack) => {
           if (ack?.success) {

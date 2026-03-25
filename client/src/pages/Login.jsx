@@ -15,7 +15,7 @@ const Login = () => {
   });
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:3000/api/v1/auth/google';
+    window.location.href = 'http://localhost:3001/api/v1/auth/google';
   }
 
   const { login } = useAuth();

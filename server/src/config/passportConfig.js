@@ -7,7 +7,7 @@ const userService = new UserService();
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/api/v1/auth/google/callback",
+    callbackURL: "http://localhost:3001/api/v1/auth/google/callback",
     },
     async (accesToken, refreshToken, profile, done) => {
         console.log('Google profile: ', profile);

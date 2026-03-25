@@ -3,6 +3,7 @@ const UserRepository = require("../repositories/user-repo");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/serverConfig');
+const redisClient = require('../config/redisConfig');
 
 class UserService extends CrudService {
     constructor() {
@@ -32,6 +33,14 @@ class UserService extends CrudService {
                 console.log("User not found with email: ", data.email);
                 throw new Error("User not found")
             }
+            const attempts = await redisClient.incr(`login_attempts:${data.email}:${data.ip}`);
+            if(attempts === 1) {
+                await redisClient.expire(`login_attempts:${data.email}:${data.ip}`, 60);
+            }
+            if(attempts > 5) {
+                console.log("Too many login attempts for email: ", data.email);
+                throw new Error("Too many login attempts. Please try again later.");
+            }
             if (user.authProvider === "google") {
                 throw new Error("Please login using Google");
             }
@@ -40,6 +49,7 @@ class UserService extends CrudService {
                 console.log("Invalid password for user: ", data.email);
                 throw new Error("Invalid password");
             }
+            await redisClient.del(`login_attempts:${data.email}:${data.ip}`);
             const token = await this.generateToken(user);
             return { user, token };
         } catch (error) {

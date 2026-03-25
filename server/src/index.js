@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const {PORT} = require('./config/serverConfig');
 const passport = require('./config/passportConfig');
 const socketConfig = require('./config/socketConfig');
+const redisClient = require('./config/redisConfig');
 const http = require('http');
 const app = express();
 const server = http.createServer(app);
@@ -14,6 +15,7 @@ const routes = require('./routes/index');
 const startServer = async () => {
     await connectDB();
     socketConfig(server);
+    await redisClient.connect();
     app.use(cors());
     app.use(passport.initialize());
     app.use(bodyParser.json());
