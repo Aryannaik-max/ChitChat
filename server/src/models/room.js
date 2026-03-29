@@ -18,6 +18,7 @@ const roomSchema = new mongoose.Schema({
     invite_link: {
         type: String,
         unique: true,
+        sparse: true, // allow multiple docs with null invite_link
     }
 }, {timestamps: true});
 

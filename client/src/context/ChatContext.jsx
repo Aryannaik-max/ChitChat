@@ -36,6 +36,8 @@ export const ChatProvider = ({ children }) => {
   const [rooms, setRooms] = useState([]);
   const [messages, setMessages] = useState({});
   const [usersInRoom, setUsersInRoom] = useState({});
+  const [onlineUsers, setOnlineUsers] = useState(() => new Set());
+  const [activeRoom, setActiveRoom] = useState(null);
   // const [DMUsers, setDMUsers] = useState({})
 
   const fetchRooms = useCallback(async () => {
@@ -91,6 +93,30 @@ export const ChatProvider = ({ children }) => {
     socketRef.current.on('connect', () => {
       console.log("Connected to chat server");
     })
+
+    socketRef.current.on('online-users', ({ userIds }) => {
+      console.log('online-users received:', userIds);
+      const normalized = (userIds || []).map((id) => String(id));
+      setOnlineUsers(new Set(normalized));
+    });
+
+    socketRef.current.on('user-online', ({userId}) => {
+      console.log('user-online received:', userId);
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.add(String(userId));
+        return newSet;
+      });
+    });
+
+    socketRef.current.on('user-offline', ({userId}) => {
+      console.log('user-offline received for:', userId); 
+      setOnlineUsers(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(String(userId));
+          return newSet;
+        });
+    });
 
     socketRef.current.on('connect_error', (error) => {
       console.log("Socket connection error:", error?.message || error);
@@ -313,7 +339,10 @@ export const ChatProvider = ({ children }) => {
   createGroup,
   joinroom ,
   fetchUsersInRoom,
-  startDM
+  startDM,
+  setActiveRoom,
+  activeRoom,
+  onlineUsers
 };
 
   return (
