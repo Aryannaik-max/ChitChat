@@ -2,7 +2,8 @@ const { createClient } = require('redis');
 const { REDIS_URL } = require('./serverConfig')
 
 const redisClient = createClient({
-    url:REDIS_URL
+    url:REDIS_URL,
+
 });
 
 redisClient.on("error", (error) => {
