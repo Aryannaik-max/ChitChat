@@ -4,7 +4,7 @@ import { useAuth } from "./AuthContext";
 import { io } from "socket.io-client";
 import { useRef } from "react";
 
-const API_BASE_URL = (import.meta.env.VITE_BACKEND_URL || "http://localhost:3000/api/v1").replace(/\/+$/, "");
+const API_BASE_URL = (import.meta.env.VITE_BACKEND_URL || "http://localhost:3002/api/v1").replace(/\/+$/, "");
 const getSocketUrl = (apiUrl) => {
   if (!apiUrl) return apiUrl;
   try {
@@ -129,7 +129,9 @@ export const ChatProvider = ({ children }) => {
         sender_id: data.sender_id || data.senderId,
         content: data.content || data.message,
         createdAt: data.createdAt || data.timestamp || new Date().toISOString(),
-        reply_to: data.reply_to || data.replyTo || null
+        reply_to: data.reply_to || data.replyTo || null,
+        type: data.type || 'text',
+        fileName: data.fileName || null
       };
 
       setMessages(prev => ({
@@ -207,14 +209,14 @@ export const ChatProvider = ({ children }) => {
     }
   }, [token]);
 
-  const sendMessage = useCallback((roomId, content, senderId, reply_to) => {
+  const sendMessage = useCallback((roomId, content, reply_to, type = "text", fileName = null) => {
     if (!socketRef.current) {
       throw new Error("Socket is not connected");
     }
 
-    const message = content?.trim();
-    if (!roomId || !senderId || !message) {
-      throw new Error("roomId, senderId and message are required");
+    const message = typeof content === "string" ? content.trim() : "";
+    if (!roomId || !message) {
+      throw new Error("roomId and message are required");
     }
 
     return new Promise((resolve, reject) => {
@@ -223,8 +225,9 @@ export const ChatProvider = ({ children }) => {
         {
           roomId,
           message,
-          senderId,
-          reply_to
+          reply_to,
+          type,
+          fileName
         },
         (ack) => {
           if (ack?.success) {

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useChat } from '../../context/ChatContext';
 import { useAuth } from '../../context/AuthContext';
 
-const Sidebar = ({ setCreateRoom }) => {
+const Sidebar = ({ setCreateRoom, isOpen, onClose }) => {
   const navigate = useNavigate();
   const joinedRoomRef = useRef(null);
   const {
@@ -52,6 +52,17 @@ const Sidebar = ({ setCreateRoom }) => {
   };
 
   return (
+    <>
+      {isOpen && (
+        <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={onClose} />
+      )}
+      <div className={`
+        fixed md:relative z-30 md:z-auto
+        w-[370px] h-screen 
+        transition-transform duration-300
+        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+
     <div className="w-[320px] lg:w-[360px] bg-[#0F172A] h-screen border-r border-white/5 flex flex-shrink-0 shadow-2xl z-10">
 
       {/* LEFT ICON BAR */}
@@ -79,7 +90,7 @@ const Sidebar = ({ setCreateRoom }) => {
           {groups.map(room => (
             <div
               key={room._id}
-              className={`w-12 h-12 flex items-center justify-center text-center p-2 cursor-pointer text-[11px] font-bold tracking-wide transition-all duration-300 shadow-sm overflow-hidden leading-tight ${
+              className={`w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center text-center p-2 cursor-pointer text-[11px] font-bold tracking-wide transition-all duration-300 shadow-sm overflow-hidden leading-tight ${
                 activeRoom?._id === room._id
                   ? "rounded-[16px] bg-[#6C63FF] text-white shadow-lg shadow-[#6C63FF]/30"
                   : "rounded-[24px] hover:rounded-[16px] bg-[#1E293B] text-gray-400 hover:bg-[#6C63FF] hover:text-white"
@@ -104,7 +115,7 @@ const Sidebar = ({ setCreateRoom }) => {
       </div>
 
       {/* RIGHT PANEL */}
-      <div className="flex-1 py-6 px-4 overflow-y-auto bg-[#0F172A] custom-scrollbar">
+      <div className="flex-1 min-w-0 overflow-hidden py-6 px-4 overflow-y-auto bg-[#0F172A] custom-scrollbar">
 
         {/* GROUP MEMBERS */}
         {activeRoom && activeRoom.is_group ? (
@@ -136,7 +147,7 @@ const Sidebar = ({ setCreateRoom }) => {
                         />
                       </div>
 
-                      <div className="flex flex-col truncate">
+                      <div className="flex flex-col min-w-0 truncate">
                         <span className="text-sm font-semibold">{p.name}</span>
                         <span className={`text-[10px] ${
                           memberOnline ? 'text-emerald-300' : 'text-red-300'
@@ -190,8 +201,8 @@ const Sidebar = ({ setCreateRoom }) => {
                       {otherUser?.name?.charAt(0)}
                     </div>
 
-                    <div>
-                      <p>{otherUser?.name}</p>
+                    <div className="min-w-0 overflow-hidden">
+  <p className="truncate">{otherUser?.name}</p>
                       <span className={`text-xs ${online ? 'text-green-400' : 'text-red-400'}`}>
                         {online ? 'Online' : 'Offline'}
                       </span>
@@ -212,6 +223,8 @@ const Sidebar = ({ setCreateRoom }) => {
 
       </div>
     </div>
+    </div>
+    </>
   );
 };
 

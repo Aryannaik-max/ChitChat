@@ -8,6 +8,9 @@ const roomController = require('../../controllers/room-controller');
 const participantsController = require('../../controllers/participants-controller');
 const messageController = require('../../controllers/message-controller');
 const authMiddleware = require('../../middlewares/auth-middleware');
+const upload = require('../../middlewares/upload-middleware');
+const uploadController = require('../../controllers/upload-controller');
+const downloadController = require('../../controllers/download-controller');
 
 router.get('/auth/google', passport.authenticate('google', {session: false, scope: ['profile', 'email']}));
 router.get('/auth/google/callback', 
@@ -44,6 +47,10 @@ router.get('/message/room/:roomid', authMiddleware, messageController.getMessage
 router.delete('/message/:id', authMiddleware, messageController.deleteMessage);
 
 router.post('/invite/:token', authMiddleware, roomController.JoinViaInvite);
+
+
+router.post('/upload', authMiddleware, upload.single('file'), uploadController.uploadFile);
+router.get('/download', authMiddleware, downloadController.downloadFile);
 
 
 

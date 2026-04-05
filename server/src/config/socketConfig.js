@@ -161,12 +161,12 @@ const socketConfig = (server) => {
 
         socket.on('send-message', async (data, callback) => {
             try {
-                const { roomId, message, reply_to } = data || {};
+                const { roomId, message, reply_to, type, fileName } = data || {};
                 const senderId = socket.user.id;
                 const trimmedMessage = typeof message === 'string' ? message.trim() : '';
 
-                if (!roomId || !senderId || !trimmedMessage) {
-                    if (callback) callback({ success: false, message: 'roomId, senderId and message are required' });
+                if (!roomId || !trimmedMessage) {
+                    if (callback) callback({ success: false, message: 'roomId and message are required' });
                     return;
                 }
 
@@ -174,7 +174,9 @@ const socketConfig = (server) => {
                     content: trimmedMessage,
                     sender_id: senderId,
                     room_id: roomId,
-                    reply_to: reply_to || null
+                    reply_to: reply_to || null,
+                    type: type || 'text',
+                    fileName: fileName || undefined
                 });
 
                 const payload = {
@@ -183,7 +185,9 @@ const socketConfig = (server) => {
                     sender_id: createdMessage.sender_id,
                     content: createdMessage.content,
                     createdAt: createdMessage.createdAt,
-                    reply_to: createdMessage.reply_to
+                    reply_to: createdMessage.reply_to,
+                    type: createdMessage.type,
+                    fileName: createdMessage.fileName || null
                 };
 
                 io.to(roomId).emit('receive-message', payload);
@@ -191,7 +195,7 @@ const socketConfig = (server) => {
                 if (callback) callback({ success: true, data: payload });
             } catch (error) {
                 console.log('Error in send-message:', error);
-                if (callback) callback({ success: false, message: 'Failed to send message' });
+                if (callback) callback({ success: false, message: error?.message || 'Failed to send message' });
             }
         });
 

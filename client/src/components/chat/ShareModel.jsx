@@ -2,6 +2,10 @@ import { useChat } from '../../context/ChatContext';
 
 const ShareModel = ({ setShare }) => {
     const { activeRoom } = useChat();
+    const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+    });
+};
 
     return (
             <div className="fixed inset-0 bg-[#0B1426]/80 backdrop-blur-md flex items-center justify-center z-50 transition-all">
@@ -19,11 +23,11 @@ const ShareModel = ({ setShare }) => {
                     onClick={() =>
                       copyToClipboard(`${window.location.origin}/invite/${activeRoom.invite_link}`)
                     }
-                    className="bg-[#6C63FF] hover:bg-[#5A52D9] active:scale-95 transition-all text-white px-6 py-3.5 rounded-xl font-semibold shadow-lg shadow-[#6C63FF]/20"
+                    className="bg-[#6C63FF] hidden sm:block hover:bg-[#5A52D9] active:scale-95 transition-all text-white px-6 py-3.5 rounded-xl font-semibold shadow-lg shadow-[#6C63FF]/20"
                   >
                     Copy
                   </button>
-                </div>
+                </div>  
                 <div className="flex gap-2 mt-2">
                   <input
                     value={activeRoom ? `${activeRoom.invite_link}` : ""}
@@ -34,7 +38,7 @@ const ShareModel = ({ setShare }) => {
                     onClick={() =>
                       copyToClipboard(activeRoom.invite_link)
                     }
-                    className="bg-[#6C63FF] hover:bg-[#5A52D9] active:scale-95 transition-all text-white px-6 py-3.5 rounded-xl font-semibold shadow-lg shadow-[#6C63FF]/20"
+                    className="bg-[#6C63FF] hidden sm:block hover:bg-[#5A52D9] active:scale-95 transition-all text-white px-6 py-3.5 rounded-xl font-semibold shadow-lg shadow-[#6C63FF]/20"
                   >
                     Copy
                   </button>

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
-import { CornerUpLeft, MessageCircle, X } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import SideBar from '../components/chat/Sidebar';
 import Message from '../components/chat/Message';
@@ -15,9 +14,8 @@ const Chat = () => {
   const { roomid } = useParams();
   const { groups, messages, fetchChat, joinroom, fetchRooms, fetchUsersInRoom, usersInRoom, privateChats,  activeRoom, setActiveRoom} = useChat();
   const navigate = useNavigate();
-
-  const [joinRoom, setJoinRoom] = useState('');
   const [createRoom, setCreateRoom] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [groupStep, setGroupStep] = useState(1);
   const [share, setShare] = useState(false);
   const [joiningViaCode, setJoiningViaCode] = useState(false);
@@ -81,8 +79,8 @@ const Chat = () => {
     });
   };
 
-  const handleJoinViaCode = async () => {
-    const code = joinRoom.trim();
+  const handleJoinViaCode = async (inviteCode) => {
+    const code = inviteCode?.trim();
     if (!code) return;
 
     setJoiningViaCode(true);
@@ -104,7 +102,6 @@ const Chat = () => {
 
       await fetchRooms();
 
-      setJoinRoom('');
       setCreateRoom(false);
       setGroupStep(1);
       navigate(`/chat/${data.data._id}`);
@@ -120,11 +117,11 @@ const Chat = () => {
     <div className="bg-[#0B1426] h-screen flex text-gray-200 font-sans overflow-hidden">
 
       {/* SIDEBAR CONTAINER */}
-      <SideBar setCreateRoom={setCreateRoom} />
+      <SideBar setCreateRoom={setCreateRoom} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}/>
       {/* CHAT AREA */}
       <div className="flex-1 flex flex-col relative bg-[#0B1426]">
         {/* HEADER */}
-        <Header share={share} setShare={setShare} />
+        <Header share={share} setShare={setShare} setSidebarOpen={setSidebarOpen}/>
         {/* MESSAGES */}
         <Message handleReplyToMessage={handleReplyToMessage} replyToMessage={replyToMessage} setReplyToMessage={setReplyToMessage}/>
         {/* MESSAGE INPUT */}
@@ -134,7 +131,7 @@ const Chat = () => {
       {/* SHARE MODAL */}
       {share && <ShareModal  share={share} setShare={setShare} activeRoom={activeRoom}/>}
       {/* CREATE / JOIN MODAL */}
-      {createRoom && <CreateRoomModel setCreateRoom={setCreateRoom} groupStep={groupStep} setGroupStep={setGroupStep} handleJoinViaCode={handleJoinViaCode} />
+      {createRoom && <CreateRoomModel setCreateRoom={setCreateRoom} groupStep={groupStep} setGroupStep={setGroupStep} handleJoinViaCode={handleJoinViaCode} joiningViaCode={joiningViaCode} />
       }
     </div>
   );
