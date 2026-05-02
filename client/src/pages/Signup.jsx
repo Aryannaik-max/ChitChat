@@ -7,6 +7,7 @@ import GoogleIcon from '../assets/Google.png'
 import { Link, useNavigate } from 'react-router-dom'
 import Signupimage from '../assets/Signupimage.png'
 import { useAuth } from '../context/AuthContext'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const Signup = () => {
   });
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:3001/api/v1/auth/google';
+    window.location.href = `${BACKEND_URL}/auth/google`;
   };
 
   const handleChange = (e) => {

@@ -6,13 +6,14 @@ import GoogleIcon from '../assets/Google.png'
 import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:3001/api/v1/auth/google';
+    window.location.href = `${BACKEND_URL}/auth/google`;
   }
 
   const { login } = useAuth();
