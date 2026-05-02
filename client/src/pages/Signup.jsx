@@ -9,6 +9,7 @@ import Signupimage from '../assets/Signupimage.png'
 import { useAuth } from '../context/AuthContext'
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
+
 const Signup = () => {
   const navigate = useNavigate();
   const { signup } = useAuth();
