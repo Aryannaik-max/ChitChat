@@ -11,6 +11,7 @@ const authMiddleware = require('../../middlewares/auth-middleware');
 const upload = require('../../middlewares/upload-middleware');
 const uploadController = require('../../controllers/upload-controller');
 const downloadController = require('../../controllers/download-controller');
+const {FRONTEND_URL} = require('../../config/serverConfig');
 
 router.get('/auth/google', passport.authenticate('google', {session: false, scope: ['profile', 'email']}));
 router.get('/auth/google/callback', 
@@ -19,7 +20,7 @@ router.get('/auth/google/callback',
         // Successful authentication, redirect to frontend
         const token = await userService.generateToken(req.user);
         
-        res.redirect('http://localhost:5173/chat'); // Redirect to your React app
+        res.redirect(`${FRONTEND_URL}/chat`); 
     }
 );
 
