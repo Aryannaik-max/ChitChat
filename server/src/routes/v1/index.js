@@ -15,12 +15,12 @@ const {FRONTEND_URL} = require('../../config/serverConfig');
 
 router.get('/auth/google', passport.authenticate('google', {session: false, scope: ['profile', 'email']}));
 router.get('/auth/google/callback', 
-    passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+    passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/login` }),
     async (req, res) => {
-        // Successful authentication, redirect to frontend
         const token = await userService.generateToken(req.user);
-        
-        res.redirect(`${FRONTEND_URL}/chat`); 
+        const redirectUrl = `${FRONTEND_URL}/chat?token=${encodeURIComponent(token)}`;
+
+        res.redirect(redirectUrl);
     }
 );
 

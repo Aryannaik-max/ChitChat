@@ -41,6 +41,17 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const urlToken = params.get('token');
+        if (urlToken) {
+            setToken(urlToken);
+            localStorage.setItem('token', urlToken);
+            params.delete('token');
+            const cleanSearch = params.toString();
+            const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
+            window.history.replaceState({}, '', cleanUrl);
+        }
+
         const initAuth = async () => {
             if(token) {
                 await fetchUserProfile();
